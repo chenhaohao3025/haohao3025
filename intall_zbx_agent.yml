@@ -1,0 +1,27 @@
+- hosts: all
+  remote_user: root
+  tasks:
+  - name: copy
+    copy: src=/usr/local/src/zabbix-3.4.3.tar.gz dest=/usr/local/src/zabbix-3.4.3.tar.gz
+  - name: tar
+    shell: cd /usr/loal/src;tar xf zabbix-3.4.3.tar.gz
+  - name: yum install base dev
+    yum: name={{ item }} state=latest
+    with_items:
+    - make
+    - gcc
+    - curl
+    - curl-devel
+    - pcre-devel
+  - name: configure
+    shell: cd /usr/local/src/zabbix-3.4.3;./configure --with-net-snmp --with-libcurl --enable-agent --prefix=/usr/local/zabbix;make && make install
+  - name: config init agent
+    shell: cp /usr/local/src/zabbix-3.4.3/misc/init.d/fedora/core5/zabbix_agentd 
+  - name: chmod
+    shell: chmod a+x /etc/init.d/zabbix_agentd
+  - name: edit zabbix-agent
+    shell:  sed -i 's/ZABBIX_BIN="\/usr\/local\/sbin\/zabbix_agentd"/ZABBIX_BIN="\/usr\/local\/zabbix\/sbin\/zabbix_agentd"/g' /etc/init.d/zabbix_agentd
+  - name: vim conf
+    shell: sed -i 's/Server=127.0.0.1/Server={{ server_ip }}/g'
+  - name: restart agent
+    shell: /etc/init.d/zabbix_agentd restart
